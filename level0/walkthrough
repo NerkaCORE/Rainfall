@@ -1,0 +1,10 @@
+A l'aide de GDB, on comprend qu'il faut lancer 423 en argument : 
+
+0x08048ed9 <+25>:	cmp    $0x1a7,%eax
+
+ce qui nous ouvre un shell.
+A l'intérieur de celui ci on peut exécuter la commande donnée dans le sujet :
+cat /home/user/level1/.pass
+
+Ce qui nous donne le pass du niveau suivant :
+1fe8a524fa4bec01ca4ea2a869af2a02260d4a7d5fe7e7c24d8617e6dca12d3a

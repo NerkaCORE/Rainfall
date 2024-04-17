@@ -1,0 +1,28 @@
+Ce niveau est un peu plus compliqué que les précédents.
+Ce programme segfault si on lui envoie pas au moins 2 arguments.
+
+En faisant un info func dans gdb on voit qu’il y a un main, une fonction m et plusieurs fonctions de la libc.
+
+Dans le main on remarque 4 appels à malloc(), 2 à strcpy(), et à la fin du main un appel à fopen() puis 
+fgets et puts.
+
+Si on check l’adresse mémoire contenant le nom du fichier que fopen() doit ouvrir on se rend compte 
+qu’elle contient : "/home/user/level8/.pass”. On se doute donc que notre objectif sera d’appeler la 
+fonction m qui nous afficherait le pass contenu dans une variable avec printf.
+
+Pour cela on va utiliser les 2 strcpy() présents dans le main afin de remplacer l’adresse de la 
+fonction puts() par celle de la fonction m.
+
+Il nous faut donc : 
+
+- l’adresse de m : 0x80484f4
+- l’adresse de puts qu’on peut retrouver dans le GOT par exemple : 08049928
+- l’offset pour pouvoir print assez de caractère dans le 1er argument afin d’atteindre le 2eme strcpy() 
+: 
+ En utilisant la méthode du fuzzing (tout simplement en envoyant un nombre de donnée croissant jusqu’à que le programme crash ) on trouve que le programme segfault au dessus de 20 chars.
+
+On peut maintenant construire le payload : 
+
+./level7 $(python -c 'print "a" * 20 + "\x28\x99\x04\x08" ') $(python -c 'print "\xf4\x84\x04\x08" ')
+
+5684af5cb4c8679958be4abe6373147ab52d95768e047820bf382e44fa8d8fb9

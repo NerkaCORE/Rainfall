@@ -1,0 +1,27 @@
+Si on lance l'executable avec ou sans argument on voit qu'on peut écrire sur le stdin et lorsqu'on lui envoi rien ne se passe, 
+le programme se termine.
+
+On lance gdb : Si on fait un disas main on voit que la fonction gets de la lib C est utilisée.
+Dans le man on voit qu'il ne faut plus l'utiliser car comparé à fgets, il ne reçoit pas la longueur max de la chaine en 
+argument. Ce qui fait que si on dépasse la taille du buffer on obtient un overflow donc un segfault.
+
+Si on fait un info function on voit aussi qu'il y a une fonction run dans la liste des fonctions du programme. On fait un disas 
+run et on voit qu'il y a un appel à system.
+Si on arrive à lancer cette fonction en profitant de l'overflow on pourra alors avoir un shell à disposition. Pour cela il faut 
+deja savoir à combien de caractères le programme segfault.
+
+Dans gdb on voit à main <+6> que le programme alloue de la memoire avec un SUB, que 0x50 est soustrait au registre esp : 0x50 = 
+80 en decimal. Si on check et qu'on envoi 80 chars au programme il segfault bien.
+
+On sait maintenant qu'il faut lui envoyer un fichier contenant 80 chars avec l'adresse de la fonction run à la fin pour qu'elle 
+soit appelée, pour cela :
+
+python -c 'print "a"*76+"\x44\x84\x04\x08"' > /tmp/overflow
+
+On lance ensuite le programme en lui envoyant le fichier avec cat - :
+
+cat /tmp/overflow - | ./level1
+
+Ce qui spawn un shell, on peut maintenant lancer la commande cat /home/user/level2/.pass pour obtenir le pass suivant :
+
+53a4a712787f40ec66c3c26c1f4b164dcad5552b038bb0addd69bf5bf6fa8e77

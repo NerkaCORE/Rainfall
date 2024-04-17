@@ -1,0 +1,32 @@
+Ce programme tourne en boucle, il nous envoie (nil), (nil) lorsqu'on le lance et nous renvoie la même 
+chose à chaque entrée sur le stdin.
+A l’aide de gdb on trouve ceci : 
+
+0x080485c1 <+93>:	mov    $0x8048819,%eax
+x/s  0x8048819 : “auth “
+
+0x08048648 <+228>:	mov    $0x804881f,%eax
+x/s 0x804881f : “reset”
+
+0x0804867e <+282>:	mov    $0x8048825,%eax
+x/s 0x8048825 : “service”
+
+0x080486bb <+343>:	mov    $0x804882d,%eax
+x/s 0x804882d : “login”
+
+On trouve aussi un call system dans le main mais on voit ces trois lignes juste avant :
+
+0x080486e7 <+387>:	mov    0x20(%eax),%eax
+0x080486ea <+390>:	test   %eax,%eax
+0x080486ec <+392>:	je     0x80486ff <main+411>
+
+Ce programme check juste si la valeur contenue à l’adresse de auth + 32 est bien différente de 0 :
+
+Si on lui envoi "auth " puis "service", on voit que la 2eme adresse est 16 bytes plus loin que auth : 
+0x804a008, 0x804a018
+On essaie donc le lui envoyer encore une fois "service" ce qui va le décaler encore de 16 bytes (donc auth + 32 bytes) puis on 
+fait login.
+
+Le shell se lance bien, on a plus qu’à récupérer le flag.
+
+c542e581c5ba5162a85f767996e3247ed619ef6c6f7b76a59435545dc6259f8a

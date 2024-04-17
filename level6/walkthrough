@@ -1,0 +1,37 @@
+Ce programme segfault si on le lance sans argument et nous renvoi “Nope” si on lui envoi un ou 
+plusieurs arguments.
+
+On lance gdb : info function nous dis qu’il y a 3 fonctions : main, n et m.
+
+En faisant un disas main, on voit qu’il fait appel a plusieurs fonctions de la libc mais à aucune des 2 
+autres fonctions.
+Un disas m et un disas n nous apprend que m fait juste un call à un puts et n lui fait un call à 
+system.
+
+On se doute donc que l’objectif est de lancer la fonction n.
+
+Pour cela on doit d’abord trouver une faille de sécurité à exploiter : en faisant quelques recherches 
+on trouve une faille exploitable sur strcpy().
+En profitant du buffer overflow crée par le strcpy on peut y injecter l’adresse de n.
+
+Pour cela il nous faut plusieurs choses :
+
+Trouver l’offset d’EIP : 
+- soit à l’aide du site : https://projects.jason-rush.com/tools/buffer-overflow-eip-offset-string-generator/
+- soit en trouvant l’adresse du buffer de strcpy() et l’adresse 
+d’argv[1] et en les soustrayant.
+
+Nous allons utiliser la 2eme méthode pour changer un peu :
+
+On met un breakpoint juste après strcpy(), en faisant i r eax on trouve l’adresse d’argv[1] : 
+0x804a008, on peut vérifier en faisant un x/s 0x804a008.
+Ensuite pour l’adresse du buffer, de la même manière elle devrait être contenu dans le registre eax 
+dans la prochaine instruction, on met donc un autre breakpoint juste après et on la récupère : 
+0x804a050
+
+Si on fait print 0x804a050 - 0x804a008 dans gdb on trouve 72.
+On a maintenant l’offset et l’adresse de n qu’il faut envoyer dans le payload.
+
+./level6 $(python -c 'print "a" * 72 + "\x54\x84\x04\x08"')
+
+f73dcb7a06f60e3ccc608990b0a046359d42a1a0489ffeefd0d9cb2d7c9cb82d

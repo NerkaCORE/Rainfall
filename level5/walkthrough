@@ -1,0 +1,40 @@
+Ce programme nous renvoi encore une fois la même chose qu’on lui envoi sur le stdin si on l’exécute.
+
+On lance gdb : avec info func on voit 3 fonctions principales : main, n et o.
+Le main appel la fonction n qui n’appelle pas o. la fonction o quand à elle contient un appel à system.
+
+On se doute donc que l’objectif de cet exercice serait de faire lancer o().
+
+Pour cela on va faire ce qu’on appel on “Code execution redirect” : une redirection du flow d’execution 
+du programme et plus précisément un GOT overwrite.
+En gros, lorsqu’un programme est éxécuté, le GOT (Global Offset Table) est initialisé pour toutes les 
+fonctions externes (ex: libc). En faisant ainsi, l’executable va mettre en cache les adresses dans le 
+GOT pour qu’il n’ait pas à demander à la libc à chaque appel de fonction externe.
+
+Notre objectif sera donc de récupérer l’adresse de la fonction exit() dans le GOT et de l’écraser par 
+celle de la fonction o().
+Voilà comment procéder :
+
+- On trouve l’adresse de o()
+- On trouve l’adresse d’exit() dans le GOT
+- On trouve l’offset de notre string sur la stack
+- On écrit le payload.
+
+Avec objdump -t level5 | grep o, on récupère l’adresse de o() : 080484a4
+Avec objdump -R level5, on récupère l’adresse d’exit() : 08049838
+En utilisant la meme procédure que pour les exercices procédants on trouve l’offset de notre string : 
+4.
+
+0804 : 2052 en décimal
+84a4 : 33956 en décimal
+
+Il ne reste plus qu’à écrire le payload :
+
+python -c 'print "\x40\x98\x04\x08\x38\x98\x04\x08%2044x%4$hn%31904x%5$hn" ' > /tmp/lvl5 && cat 
+/tmp/lvl5 - | ./level5
+
+Le shell se lance bien, on peut faire cat /home/user/level6/.pass :
+
+d3b7bf1025225bd715fa8ccb54ef06ca70b9125ac855aeab4878217177f41a31
+
+On vient donc de voir toutes les différentes façons d’exploiter les vulnérabilités du %n de printf.

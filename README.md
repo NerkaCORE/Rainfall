@@ -1,4 +1,4 @@
-# Rainfall
+# Rainfall | This project is not finished 
 
 As a developer, you might have to work on softwares that will be used by hundreds of
 people.
